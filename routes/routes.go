@@ -18,8 +18,10 @@ func RegisterRoutes() {
 			handlers.CreateUser(w, r)
 
 		case "GET":
-			middleware.AuthMiddleware(handlers.GetUsers)(w, r)
-
+				handler := handlers.GetUsers
+				handler = middleware.RateLimitMiddleware(handler)
+				handler = middleware.AuthMiddleware(handler)
+				handler(w, r)
 		default:
 			http.Error(w, "Method not allowed", 405)
 		}
