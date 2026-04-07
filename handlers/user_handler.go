@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"go-backend/db"
 	"go-backend/models"
+	"go-backend/utils"
 	"net/http"
 )
 
-// GET /users
 func GetUsers(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.DB.Query("SELECT id, name FROM users")
 	if err != nil {
@@ -27,7 +27,6 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(users)
 }
 
-// POST /users
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 
@@ -50,4 +49,28 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	user.ID = id
 	json.NewEncoder(w).Encode(user)
+}
+
+func Login(w http.ResponseWriter, r *http.Request) {
+	var user models.User
+
+	json.NewDecoder(r.Body).Decode(&user)
+
+	var dbUser models.User
+
+	err := db.DB.QueryRow(
+		"SELECT id, name FROM users WHERE name=$1",
+		user.Name,
+	).Scan(&dbUser.ID, &dbUser.Name)
+
+	if err != nil {
+		http.Error(w, "User not found", 401)
+		return
+	}
+
+	token, _ := utils.GenerateToken(dbUser.ID)
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"token": token,
+	})
 }
